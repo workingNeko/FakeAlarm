@@ -3,112 +3,122 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Fake Digital Alarm Clock</title>
+<title>iPhone-Style Portrait Alarm</title>
 <style>
     html, body {
         margin: 0;
         padding: 0;
         height: 100%;
         width: 100%;
-        background: black;
-        font-family: 'Consolas', monospace;
-        color: red;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        background: white;
         display: flex;
         justify-content: center;
         align-items: center;
-        overflow: hidden; /* prevent scrolling */
+        overflow: hidden;
+        transition: background 0.3s;
     }
 
-    #container {
+    #alarmContainer {
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        width: 90%;
+        max-width: 400px;
+        height: 90%;
         text-align: center;
-        max-width: 100%;
-        width: 100%;
-        padding: 0 10px; /* small horizontal padding */
-        box-sizing: border-box;
     }
 
     #clock {
-        font-size: 15vw;
-        color: white;
-        background: black;
-        padding: 20px;
-        border-radius: 15px;
-        text-align: center;
-        margin-bottom: 20px;
-        width: auto;
+        font-size: 18vw;
+        color: black;
+        margin: 0 0 40px 0;
+        font-weight: 300;
     }
 
-    input[type="time"], #startBtn {
-        font-size: 4vw;
-        padding: 10px;
-        margin: 5px 0;
-        border-radius: 10px;
-        border: none;
-        width: 90%;
+    #startInputContainer {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        width: 80%;
         max-width: 300px;
+        margin-bottom: 20px;
+    }
+
+    input[type="time"], button {
+        font-size: 4vw;
+        padding: 12px;
+        border-radius: 12px;
+        border: none;
+        width: 100%;
         box-sizing: border-box;
     }
 
-    #stopBtn {
-        display: none;
-        font-size: 5vw;
-        padding: 15px 30px;
-        border-radius: 15px;
-        background: linear-gradient(45deg, white, white);
-        color: grey;
-        border: none;
-        cursor: pointer;
-       
-        margin-top: 20px;
-        text-transform: uppercase;
+    button {
         font-weight: bold;
-        width: auto;
-        min-width: 120px;
+        cursor: pointer;
+        transition: all 0.3s ease;
     }
 
-    #stopBtn:hover {
-        transform: scale(1.05);
-    
+    #snoozeBtn {
+        background: #ff9f0a;
+        color: white;
+        display: none;
     }
 
-    @media (orientation: landscape) {
-        #clock {
-            font-size: 20vw;
-        }
-        #stopBtn {
-            font-size: 6vw;
-            padding: 20px 40px;
-        }
+    #snoozeBtn:hover { background: #ffa733; }
+
+    #stopBtn {
+        background: #1c1c1e;
+        color: white;
+        display: none;
     }
+
+    #stopBtn:hover { background: #333; }
+
+    .fullscreen {
+        background: black !important;
+    }
+
+    .fullscreen #clock { color: white; }
+    .fullscreen #snoozeBtn,
+    .fullscreen #stopBtn { display: inline-block; margin-top: 20px; font-size: 5vw; padding: 20px 0; border-radius: 35px; width: 80%; }
 </style>
 </head>
 <body>
-<div id="container">
-    <div id="clock">--:--:--</div>
-    <input type="time" id="startTime" step="1" placeholder="Start Time (HH:MM:SS)">
-    <input type="time" id="alarmTime" step="1" placeholder="Alarm Time (HH:MM:SS)">
-    <button id="startBtn">Start Clock</button>
-    <button id="stopBtn">STOP ALARM</button>
+
+<div id="alarmContainer">
+    <div id="clock">--:--</div>
+
+    <div id="startInputContainer">
+        <input type="time" id="startTime" step="1" placeholder="Start Time (HH:MM:SS)">
+        <input type="time" id="alarmTime" step="1" placeholder="Alarm Time (HH:MM:SS)">
+        <button id="startBtn">Start Clock</button>
+    </div>
+
+    <button id="snoozeBtn">Snooze</button>
+    <button id="stopBtn">Stop</button>
 </div>
 
 <audio id="alarmSound" src="alarm.mp3" preload="auto" loop></audio>
 
 <script>
+const clockEl = document.getElementById('clock');
+const startBtn = document.getElementById('startBtn');
+const startInputContainer = document.getElementById('startInputContainer');
+const startInput = document.getElementById('startTime');
+const alarmInput = document.getElementById('alarmTime');
+const snoozeBtn = document.getElementById('snoozeBtn');
+const stopBtn = document.getElementById('stopBtn');
+const alarmSound = document.getElementById('alarmSound');
+const body = document.body;
+
 let virtualTime;
 let alarmTime;
 let timer;
 
-const clockEl = document.getElementById('clock');
-const alarmSound = document.getElementById('alarmSound');
-const startBtn = document.getElementById('startBtn');
-const startInput = document.getElementById('startTime');
-const alarmInput = document.getElementById('alarmTime');
-const stopBtn = document.getElementById('stopBtn');
-
+// Start Clock
 startBtn.addEventListener('click', () => {
     const startTimeInput = startInput.value;
     const alarmTimeInput = alarmInput.value;
@@ -121,10 +131,9 @@ startBtn.addEventListener('click', () => {
     virtualTime = parseTime(startTimeInput);
     alarmTime = parseTime(alarmTimeInput);
 
-    // Hide inputs and start button after clock starts
-    startInput.style.display = 'none';
-    alarmInput.style.display = 'none';
-    startBtn.style.display = 'none';
+    // Hide inputs and go fullscreen
+    startInputContainer.style.display = 'none';
+    body.classList.add('fullscreen');
 
     if (timer) clearInterval(timer);
 
@@ -133,19 +142,31 @@ startBtn.addEventListener('click', () => {
         clockEl.textContent = formatTime(virtualTime);
 
         if (formatTime(virtualTime) === formatTime(alarmTime)) {
-            alarmSound.play(); // loops continuously
-            stopBtn.style.display = 'inline-block'; // show stop button
+            alarmSound.play();
+            snoozeBtn.style.display = 'inline-block';
+            stopBtn.style.display = 'inline-block';
         }
     }, 1000);
+});
+
+// Snooze: add 5 minutes
+snoozeBtn.addEventListener('click', () => {
+    alarmSound.pause();
+    alarmSound.currentTime = 0;
+    alarmTime = new Date(virtualTime.getTime() + 5 * 60 * 1000); // +5 min
+    snoozeBtn.style.display = 'none';
+    stopBtn.style.display = 'none';
 });
 
 // Stop alarm
 stopBtn.addEventListener('click', () => {
     alarmSound.pause();
     alarmSound.currentTime = 0;
+    snoozeBtn.style.display = 'none';
     stopBtn.style.display = 'none';
 });
 
+// Helper functions
 function parseTime(timeStr) {
     const [h, m, s] = timeStr.split(":").map(Number);
     const now = new Date();
@@ -160,5 +181,6 @@ function formatTime(date) {
     return `${hh}:${mm}:${ss}`;
 }
 </script>
+
 </body>
 </html>
