@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Fake Digital Alarm Clock</title>
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        background: black;
+        font-family: 'Consolas', monospace;
+        color: red;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden; /* prevent scrolling */
+    }
+
+    #container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        max-width: 100%;
+        width: 100%;
+        padding: 0 10px; /* small horizontal padding */
+        box-sizing: border-box;
+    }
+
+    #clock {
+        font-size: 15vw;
+        color: white;
+        background: black;
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 20px;
+        width: auto;
+    }
+
+    input[type="time"], #startBtn {
+        font-size: 4vw;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 10px;
+        border: none;
+        width: 90%;
+        max-width: 300px;
+        box-sizing: border-box;
+    }
+
+    #stopBtn {
+        display: none;
+        font-size: 5vw;
+        padding: 15px 30px;
+        border-radius: 15px;
+        background: linear-gradient(45deg, white, white);
+        color: grey;
+        border: none;
+        cursor: pointer;
+       
+        margin-top: 20px;
+        text-transform: uppercase;
+        font-weight: bold;
+        width: auto;
+        min-width: 120px;
+    }
+
+    #stopBtn:hover {
+        transform: scale(1.05);
+    
+    }
+
+    @media (orientation: landscape) {
+        #clock {
+            font-size: 20vw;
+        }
+        #stopBtn {
+            font-size: 6vw;
+            padding: 20px 40px;
+        }
+    }
+</style>
+</head>
+<body>
+<div id="container">
+    <div id="clock">--:--:--</div>
+    <input type="time" id="startTime" step="1" placeholder="Start Time (HH:MM:SS)">
+    <input type="time" id="alarmTime" step="1" placeholder="Alarm Time (HH:MM:SS)">
+    <button id="startBtn">Start Clock</button>
+    <button id="stopBtn">STOP ALARM</button>
+</div>
+
+<audio id="alarmSound" src="alarm.mp3" preload="auto" loop></audio>
+
+<script>
+let virtualTime;
+let alarmTime;
+let timer;
+
+const clockEl = document.getElementById('clock');
+const alarmSound = document.getElementById('alarmSound');
+const startBtn = document.getElementById('startBtn');
+const startInput = document.getElementById('startTime');
+const alarmInput = document.getElementById('alarmTime');
+const stopBtn = document.getElementById('stopBtn');
+
+startBtn.addEventListener('click', () => {
+    const startTimeInput = startInput.value;
+    const alarmTimeInput = alarmInput.value;
+
+    if (!startTimeInput || !alarmTimeInput) {
+        alert("Please set both times!");
+        return;
+    }
+
+    virtualTime = parseTime(startTimeInput);
+    alarmTime = parseTime(alarmTimeInput);
+
+    // Hide inputs and start button after clock starts
+    startInput.style.display = 'none';
+    alarmInput.style.display = 'none';
+    startBtn.style.display = 'none';
+
+    if (timer) clearInterval(timer);
+
+    timer = setInterval(() => {
+        virtualTime.setSeconds(virtualTime.getSeconds() + 1);
+        clockEl.textContent = formatTime(virtualTime);
+
+        if (formatTime(virtualTime) === formatTime(alarmTime)) {
+            alarmSound.play(); // loops continuously
+            stopBtn.style.display = 'inline-block'; // show stop button
+        }
+    }, 1000);
+});
+
+// Stop alarm
+stopBtn.addEventListener('click', () => {
+    alarmSound.pause();
+    alarmSound.currentTime = 0;
+    stopBtn.style.display = 'none';
+});
+
+function parseTime(timeStr) {
+    const [h, m, s] = timeStr.split(":").map(Number);
+    const now = new Date();
+    now.setHours(h, m, s, 0);
+    return now;
+}
+
+function formatTime(date) {
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    const ss = String(date.getSeconds()).padStart(2, '0');
+    return `${hh}:${mm}:${ss}`;
+}
+</script>
+</body>
+</html>
