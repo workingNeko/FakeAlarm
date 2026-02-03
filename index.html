@@ -11,92 +11,61 @@
         height: 100%;
         width: 100%;
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        background: white;
+        background: black;
         display: flex;
         justify-content: center;
         align-items: center;
         overflow: hidden;
-        transition: background 0.3s;
     }
 
     #alarmContainer {
-        display: flex;
+        display: none; /* hidden initially */
         flex-direction: column;
         justify-content: center;
         align-items: center;
         width: 90%;
         max-width: 400px;
-        height: 90%;
         text-align: center;
+    }
+
+    #alarmLabel {
+        font-size: 6vw;
+        color: white;
+        margin-bottom: 10px;
+        font-weight: bold;
     }
 
     #clock {
         font-size: 18vw;
-        color: black;
+        color: white;
         margin: 0 0 40px 0;
         font-weight: 300;
     }
 
-    #startInputContainer {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        width: 80%;
-        max-width: 300px;
-        margin-bottom: 20px;
-    }
-
-    input[type="time"], button {
-        font-size: 4vw;
-        padding: 12px;
-        border-radius: 12px;
-        border: none;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
     button {
+        width: 80%;
+        padding: 20px 0;
+        font-size: 5vw;
+        border: none;
+        border-radius: 35px;
+        margin: 10px 0;
         font-weight: bold;
         cursor: pointer;
         transition: all 0.3s ease;
     }
 
-    #snoozeBtn {
-        background: #ff9f0a;
-        color: white;
-        display: none;
-    }
-
+    #snoozeBtn { background: #ff9f0a; color: white; }
     #snoozeBtn:hover { background: #ffa733; }
 
-    #stopBtn {
-        background: #1c1c1e;
-        color: white;
-        display: none;
-    }
-
+    #stopBtn { background: #1c1c1e; color: white; }
     #stopBtn:hover { background: #333; }
-
-    .fullscreen {
-        background: black !important;
-    }
-
-    .fullscreen #clock { color: white; }
-    .fullscreen #snoozeBtn,
-    .fullscreen #stopBtn { display: inline-block; margin-top: 20px; font-size: 5vw; padding: 20px 0; border-radius: 35px; width: 80%; }
 </style>
 </head>
 <body>
 
 <div id="alarmContainer">
+    <div id="alarmLabel">ALARM</div>
     <div id="clock">--:--</div>
-
-    <div id="startInputContainer">
-        <input type="time" id="startTime" step="1" placeholder="Start Time (HH:MM:SS)">
-        <input type="time" id="alarmTime" step="1" placeholder="Alarm Time (HH:MM:SS)">
-        <button id="startBtn">Start Clock</button>
-    </div>
-
     <button id="snoozeBtn">Snooze</button>
     <button id="stopBtn">Stop</button>
 </div>
@@ -104,66 +73,48 @@
 <audio id="alarmSound" src="alarm.mp3" preload="auto" loop></audio>
 
 <script>
+const alarmContainer = document.getElementById('alarmContainer');
 const clockEl = document.getElementById('clock');
-const startBtn = document.getElementById('startBtn');
-const startInputContainer = document.getElementById('startInputContainer');
-const startInput = document.getElementById('startTime');
-const alarmInput = document.getElementById('alarmTime');
 const snoozeBtn = document.getElementById('snoozeBtn');
 const stopBtn = document.getElementById('stopBtn');
 const alarmSound = document.getElementById('alarmSound');
-const body = document.body;
 
 let virtualTime;
 let alarmTime;
 let timer;
 
-// Start Clock
-startBtn.addEventListener('click', () => {
-    const startTimeInput = startInput.value;
-    const alarmTimeInput = alarmInput.value;
+// Prompt user for start time and alarm time
+let startInput = prompt("Enter start time (HH:MM:SS)", "07:00:00");
+let alarmInput = prompt("Enter alarm time (HH:MM:SS)", "07:00:05"); // test default +5s
 
-    if (!startTimeInput || !alarmTimeInput) {
-        alert("Please set both times!");
-        return;
+virtualTime = parseTime(startInput);
+alarmTime = parseTime(alarmInput);
+
+// Start ticking virtual time
+timer = setInterval(() => {
+    virtualTime.setSeconds(virtualTime.getSeconds() + 1);
+
+    // Check alarm
+    if (formatTime(virtualTime) === formatTime(alarmTime)) {
+        alarmSound.play();
+        alarmContainer.style.display = "flex"; // show screen
     }
-
-    virtualTime = parseTime(startTimeInput);
-    alarmTime = parseTime(alarmTimeInput);
-
-    // Hide inputs and go fullscreen
-    startInputContainer.style.display = 'none';
-    body.classList.add('fullscreen');
-
-    if (timer) clearInterval(timer);
-
-    timer = setInterval(() => {
-        virtualTime.setSeconds(virtualTime.getSeconds() + 1);
-        clockEl.textContent = formatTime(virtualTime);
-
-        if (formatTime(virtualTime) === formatTime(alarmTime)) {
-            alarmSound.play();
-            snoozeBtn.style.display = 'inline-block';
-            stopBtn.style.display = 'inline-block';
-        }
-    }, 1000);
-});
+}, 1000);
 
 // Snooze: add 5 minutes
 snoozeBtn.addEventListener('click', () => {
     alarmSound.pause();
     alarmSound.currentTime = 0;
-    alarmTime = new Date(virtualTime.getTime() + 5 * 60 * 1000); // +5 min
-    snoozeBtn.style.display = 'none';
-    stopBtn.style.display = 'none';
+    alarmTime = new Date(virtualTime.getTime() + 5 * 60 * 1000);
+    alarmContainer.style.display = "none"; // hide screen again until next alarm
 });
 
 // Stop alarm
 stopBtn.addEventListener('click', () => {
     alarmSound.pause();
     alarmSound.currentTime = 0;
-    snoozeBtn.style.display = 'none';
-    stopBtn.style.display = 'none';
+    clearInterval(timer);
+    alarmContainer.style.display = "none";
 });
 
 // Helper functions
@@ -178,6 +129,7 @@ function formatTime(date) {
     const hh = String(date.getHours()).padStart(2, '0');
     const mm = String(date.getMinutes()).padStart(2, '0');
     const ss = String(date.getSeconds()).padStart(2, '0');
+    clockEl.textContent = `${hh}:${mm}:${ss}`;
     return `${hh}:${mm}:${ss}`;
 }
 </script>
