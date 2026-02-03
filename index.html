@@ -20,7 +20,7 @@ html, body {
 }
 
 #alarmContainer {
-    display: none; /* hidden until alarm triggers */
+    display: none;
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -41,6 +41,14 @@ html, body {
     font-size: 20vw;
     color: white;
     margin-bottom: 40px;
+    font-weight: 300;
+    display: flex;
+    align-items: baseline;
+}
+
+#ampm {
+    font-size: 6vw;
+    margin-left: 4px;
     font-weight: 300;
 }
 
@@ -100,7 +108,7 @@ button {
 
 <div id="alarmContainer">
     <div id="alarmLabel">ALARM</div>
-    <div id="clock">--:--:--</div>
+    <div id="clock"><span id="time">--:--</span><span id="ampm"></span></div>
     <button id="snoozeBtn">Snooze</button>
     <button id="stopBtn">Stop</button>
 </div>
@@ -114,7 +122,8 @@ button {
 <audio id="alarmSound" src="alarm.mp3" preload="auto" loop></audio>
 
 <script>
-const clockEl = document.getElementById('clock');
+const timeEl = document.getElementById('time');
+const ampmEl = document.getElementById('ampm');
 const startBtn = document.getElementById('startBtn');
 const startInputContainer = document.getElementById('startInputContainer');
 const startInput = document.getElementById('startTime');
@@ -128,6 +137,7 @@ const body = document.body;
 let virtualTime;
 let alarmTimeValue;
 let timer;
+let alarmTriggered = false;
 
 // Fullscreen function
 function goFullScreen() {
@@ -137,7 +147,7 @@ function goFullScreen() {
     else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
 }
 
-// Helper functions
+// Parse input time into Date
 function parseTime(timeStr) {
     const [h, m, s] = timeStr.split(":").map(Number);
     const now = new Date();
@@ -145,12 +155,25 @@ function parseTime(timeStr) {
     return now;
 }
 
+// Display HH:MM:SS during countdown
 function formatTime(date) {
     const hh = String(date.getHours()).padStart(2, '0');
     const mm = String(date.getMinutes()).padStart(2, '0');
     const ss = String(date.getSeconds()).padStart(2, '0');
-    clockEl.textContent = `${hh}:${mm}:${ss}`;
+    timeEl.textContent = `${hh}:${mm}:${ss}`;
+    ampmEl.textContent = '';
     return `${hh}:${mm}:${ss}`;
+}
+
+// Display HH:MM AM/PM for alarm
+function formatTimeAMPM(date) {
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+    timeEl.textContent = `${hours}:${minutes}`;
+    ampmEl.textContent = ` ${ampm}`;
 }
 
 // Start Clock
@@ -177,12 +200,20 @@ startBtn.addEventListener('click', () => {
 
     timer = setInterval(() => {
         virtualTime.setSeconds(virtualTime.getSeconds() + 1);
-        formatTime(virtualTime);
 
-        // Check alarm
-        if (formatTime(virtualTime) === formatTime(alarmTimeValue)) {
-            alarmSound.play();
-            alarmContainer.style.display = 'flex';
+        if (alarmTriggered) {
+            formatTimeAMPM(virtualTime);
+        } else {
+            if (formatTime(virtualTime) !== formatTime(alarmTimeValue)) {
+                formatTime(virtualTime);
+            }
+
+            if (formatTime(virtualTime) === formatTime(alarmTimeValue)) {
+                alarmTriggered = true;
+                alarmSound.play();
+                alarmContainer.style.display = 'flex';
+                formatTimeAMPM(virtualTime);
+            }
         }
     }, 1000);
 });
@@ -193,6 +224,7 @@ snoozeBtn.addEventListener('click', () => {
     alarmSound.currentTime = 0;
     alarmTimeValue = new Date(virtualTime.getTime() + 5*60*1000);
     alarmContainer.style.display = 'none';
+    alarmTriggered = false;
 });
 
 // Stop alarm
