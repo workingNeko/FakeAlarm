@@ -16,10 +16,11 @@
         justify-content: center;
         align-items: center;
         overflow: hidden;
+        transition: background 0.3s;
     }
 
     #alarmContainer {
-        display: none; /* hidden initially */
+        display: none; /* hidden until alarm triggers */
         flex-direction: column;
         justify-content: center;
         align-items: center;
@@ -38,17 +39,29 @@
     #clock {
         font-size: 18vw;
         color: white;
-        margin: 0 0 40px 0;
+        margin-bottom: 40px;
         font-weight: 300;
     }
 
-    button {
+    #startInputContainer {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
         width: 80%;
-        padding: 20px 0;
-        font-size: 5vw;
+        max-width: 300px;
+        margin-bottom: 20px;
+    }
+
+    input[type="time"], button {
+        font-size: 4vw;
+        padding: 12px;
+        border-radius: 12px;
         border: none;
-        border-radius: 35px;
-        margin: 10px 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    button {
         font-weight: bold;
         cursor: pointer;
         transition: all 0.3s ease;
@@ -59,63 +72,52 @@
 
     #stopBtn { background: #1c1c1e; color: white; }
     #stopBtn:hover { background: #333; }
+
+    .fullscreen {
+        background: black !important;
+    }
 </style>
 </head>
 <body>
 
 <div id="alarmContainer">
     <div id="alarmLabel">ALARM</div>
-    <div id="clock">--:--</div>
+    <div id="clock">--:--:--</div>
     <button id="snoozeBtn">Snooze</button>
     <button id="stopBtn">Stop</button>
+</div>
+
+<div id="startInputContainer">
+    <input type="time" id="startTime" step="1" placeholder="Start Time (HH:MM:SS)">
+    <input type="time" id="alarmTime" step="1" placeholder="Alarm Time (HH:MM:SS)">
+    <button id="startBtn">Start Clock</button>
 </div>
 
 <audio id="alarmSound" src="alarm.mp3" preload="auto" loop></audio>
 
 <script>
-const alarmContainer = document.getElementById('alarmContainer');
 const clockEl = document.getElementById('clock');
+const startBtn = document.getElementById('startBtn');
+const startInputContainer = document.getElementById('startInputContainer');
+const startInput = document.getElementById('startTime');
+const alarmInput = document.getElementById('alarmTime');
+const alarmContainer = document.getElementById('alarmContainer');
 const snoozeBtn = document.getElementById('snoozeBtn');
 const stopBtn = document.getElementById('stopBtn');
 const alarmSound = document.getElementById('alarmSound');
+const body = document.body;
 
 let virtualTime;
 let alarmTime;
 let timer;
 
-// Prompt user for start time and alarm time
-let startInput = prompt("Enter start time (HH:MM:SS)", "07:00:00");
-let alarmInput = prompt("Enter alarm time (HH:MM:SS)", "07:00:05"); // test default +5s
-
-virtualTime = parseTime(startInput);
-alarmTime = parseTime(alarmInput);
-
-// Start ticking virtual time
-timer = setInterval(() => {
-    virtualTime.setSeconds(virtualTime.getSeconds() + 1);
-
-    // Check alarm
-    if (formatTime(virtualTime) === formatTime(alarmTime)) {
-        alarmSound.play();
-        alarmContainer.style.display = "flex"; // show screen
-    }
-}, 1000);
-
-// Snooze: add 5 minutes
-snoozeBtn.addEventListener('click', () => {
-    alarmSound.pause();
-    alarmSound.currentTime = 0;
-    alarmTime = new Date(virtualTime.getTime() + 5 * 60 * 1000);
-    alarmContainer.style.display = "none"; // hide screen again until next alarm
-});
-
-// Stop alarm
-stopBtn.addEventListener('click', () => {
-    alarmSound.pause();
-    alarmSound.currentTime = 0;
-    clearInterval(timer);
-    alarmContainer.style.display = "none";
-});
+// Fullscreen function
+function goFullScreen() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) elem.requestFullscreen();
+    else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen(); // Safari
+    else if (elem.msRequestFullscreen) elem.msRequestFullscreen(); // IE11
+}
 
 // Helper functions
 function parseTime(timeStr) {
@@ -132,6 +134,57 @@ function formatTime(date) {
     clockEl.textContent = `${hh}:${mm}:${ss}`;
     return `${hh}:${mm}:${ss}`;
 }
+
+// Start Clock
+startBtn.addEventListener('click', () => {
+    const startTimeInput = startInput.value;
+    const alarmTimeInput = alarmInput.value;
+
+    if (!startTimeInput || !alarmTimeInput) {
+        alert("Please set both times!");
+        return;
+    }
+
+    virtualTime = parseTime(startTimeInput);
+    alarmTime = parseTime(alarmTimeInput);
+
+    // Hide inputs
+    startInputContainer.style.display = 'none';
+    body.classList.add('fullscreen');
+
+    // Go fullscreen
+    goFullScreen();
+
+    if (timer) clearInterval(timer);
+
+    timer = setInterval(() => {
+        virtualTime.setSeconds(virtualTime.getSeconds() + 1);
+        formatTime(virtualTime);
+
+        // Check alarm
+        if (formatTime(virtualTime) === formatTime(alarmTime)) {
+            alarmSound.play();
+            alarmContainer.style.display = 'flex';
+        }
+    }, 1000);
+});
+
+// Snooze: +5 minutes
+snoozeBtn.addEventListener('click', () => {
+    alarmSound.pause();
+    alarmSound.currentTime = 0;
+    alarmTime = new Date(virtualTime.getTime() + 5*60*1000);
+    alarmContainer.style.display = 'none';
+});
+
+// Stop alarm
+stopBtn.addEventListener('click', () => {
+    alarmSound.pause();
+    alarmSound.currentTime = 0;
+    alarmContainer.style.display = 'none';
+    clearInterval(timer);
+    if (document.fullscreenElement) document.exitFullscreen();
+});
 </script>
 
 </body>
