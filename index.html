@@ -5,77 +5,95 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>iPhone-Style Portrait Alarm</title>
 <style>
-    html, body {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        width: 100%;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        background: black;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        overflow: hidden;
-        transition: background 0.3s;
-    }
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    transition: background 0.3s;
+}
 
-    #alarmContainer {
-        display: none; /* hidden until alarm triggers */
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        width: 90%;
-        max-width: 400px;
-        text-align: center;
-    }
+#alarmContainer {
+    display: none; /* hidden until alarm triggers */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 95%;
+    max-width: 400px;
+    text-align: center;
+    padding: 10px;
+}
 
-    #alarmLabel {
-        font-size: 6vw;
-        color: white;
-        margin-bottom: 10px;
-        font-weight: bold;
-    }
+#alarmLabel {
+    font-size: 8vw;
+    color: white;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
 
-    #clock {
-        font-size: 18vw;
-        color: white;
-        margin-bottom: 40px;
-        font-weight: 300;
-    }
+#clock {
+    font-size: 20vw;
+    color: white;
+    margin-bottom: 40px;
+    font-weight: 300;
+}
 
-    #startInputContainer {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        width: 80%;
-        max-width: 300px;
-        margin-bottom: 20px;
-    }
+#startInputContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 90%;
+    max-width: 350px;
+    margin-bottom: 20px;
+    padding: 10px;
+}
 
-    input[type="time"], button {
-        font-size: 4vw;
-        padding: 12px;
-        border-radius: 12px;
-        border: none;
-        width: 100%;
-        box-sizing: border-box;
-    }
+input[type="time"], button {
+    font-size: 5vw;
+    padding: 14px;
+    border-radius: 15px;
+    border: none;
+    width: 100%;
+    box-sizing: border-box;
+}
 
-    button {
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
+button {
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
 
-    #snoozeBtn { background: #ff9f0a; color: white; }
-    #snoozeBtn:hover { background: #ffa733; }
+#snoozeBtn {
+    background: #ff9f0a;
+    color: white;
+    font-size: 5vw;
+    padding: 16px 0;
+    margin: 12px 0;
+    border-radius: 35px;
+    width: 85%;
+}
+#snoozeBtn:hover { background: #ffa733; }
 
-    #stopBtn { background: #1c1c1e; color: white; }
-    #stopBtn:hover { background: #333; }
+#stopBtn {
+    background: #1c1c1e;
+    color: white;
+    font-size: 5vw;
+    padding: 16px 0;
+    margin: 12px 0;
+    border-radius: 35px;
+    width: 85%;
+}
+#stopBtn:hover { background: #333; }
 
-    .fullscreen {
-        background: black !important;
-    }
+.fullscreen {
+    background: black !important;
+}
 </style>
 </head>
 <body>
@@ -108,15 +126,15 @@ const alarmSound = document.getElementById('alarmSound');
 const body = document.body;
 
 let virtualTime;
-let alarmTime;
+let alarmTimeValue;
 let timer;
 
 // Fullscreen function
 function goFullScreen() {
     const elem = document.documentElement;
     if (elem.requestFullscreen) elem.requestFullscreen();
-    else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen(); // Safari
-    else if (elem.msRequestFullscreen) elem.msRequestFullscreen(); // IE11
+    else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+    else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
 }
 
 // Helper functions
@@ -146,7 +164,7 @@ startBtn.addEventListener('click', () => {
     }
 
     virtualTime = parseTime(startTimeInput);
-    alarmTime = parseTime(alarmTimeInput);
+    alarmTimeValue = parseTime(alarmTimeInput);
 
     // Hide inputs
     startInputContainer.style.display = 'none';
@@ -162,7 +180,7 @@ startBtn.addEventListener('click', () => {
         formatTime(virtualTime);
 
         // Check alarm
-        if (formatTime(virtualTime) === formatTime(alarmTime)) {
+        if (formatTime(virtualTime) === formatTime(alarmTimeValue)) {
             alarmSound.play();
             alarmContainer.style.display = 'flex';
         }
@@ -173,7 +191,7 @@ startBtn.addEventListener('click', () => {
 snoozeBtn.addEventListener('click', () => {
     alarmSound.pause();
     alarmSound.currentTime = 0;
-    alarmTime = new Date(virtualTime.getTime() + 5*60*1000);
+    alarmTimeValue = new Date(virtualTime.getTime() + 5*60*1000);
     alarmContainer.style.display = 'none';
 });
 
